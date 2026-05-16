@@ -1,0 +1,21 @@
+{
+    "name": "@anubis/ds",
+    "version": "1.0.0",
+    "description": "Anubis World — design system. Source-of-truth tokens.json compiles to a Tailwind preset, CSS variables, theme classes, and keyframe animations. Zero runtime deps; consumers fetch dist/* from GitHub Pages or install this repo.",
+    "private": true,
+    "type": "module",
+    "main": "dist/tailwind-preset.cjs",
+    "files": [
+        "tokens.json",
+        "dist/"
+    ],
+    "scripts": {
+        "build": "node scripts/build.js"
+    },
+    "homepage": "https://damanoreshkan-beep.github.io/anubis-ds/",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/damanoreshkan-beep/anubis-ds.git"
+    },
+    "license": "UNLICENSED"
+}
