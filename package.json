@@ -10,7 +10,8 @@
         "dist/"
     ],
     "scripts": {
-        "build": "node scripts/build.js"
+        "build": "node scripts/build.js",
+        "prepare": "node scripts/build.js"
     },
     "homepage": "https://damanoreshkan-beep.github.io/anubis-ds/",
     "repository": {
