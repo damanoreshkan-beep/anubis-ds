@@ -76,6 +76,15 @@ for (const [name, value] of Object.entries(tokens.color.alpha)) {
 for (const [name, ref] of Object.entries(tokens.color.semantic.default)) {
     lines.push(`    --color-${name}: ${resolve(ref)};`)
 }
+// shadcn alias variables (background / foreground / primary / etc).
+// shadcn components reference these names directly via `var(--background)`,
+// so we emit them WITHOUT the `--color-` prefix.
+for (const [name, ref] of Object.entries(tokens.color.shadcn.default)) {
+    lines.push(`    --${name}: ${resolve(ref)};`)
+}
+// Border-radius alias for shadcn — its components use a single
+// `--radius` token rather than a scale.
+lines.push(`    --radius: ${tokens.radius.lg}px;`)
 // Spacing.
 for (const [k, v] of Object.entries(tokens.spacing)) lines.push(`    --spacing-${k}: ${v}px;`)
 // Radius.
@@ -101,6 +110,9 @@ lines.push('')
 lines.push('[data-theme="light"] {')
 for (const [name, ref] of Object.entries(tokens.color.semantic.light)) {
     lines.push(`    --color-${name}: ${resolve(ref)};`)
+}
+for (const [name, ref] of Object.entries(tokens.color.shadcn.light)) {
+    lines.push(`    --${name}: ${resolve(ref)};`)
 }
 lines.push('}')
 
@@ -191,23 +203,57 @@ fs.writeFileSync(path.join(DIST, 'index.css'),
 // Builds a Tailwind preset that mirrors the same color/spacing/radius/typography
 // values that drive the CSS variables. Widgets use this so utility classes
 // (`bg-brand-600`, `rounded-2xl`, `text-xs`) resolve to identical hex values.
+// shadcn-compatible color aliases that wire Tailwind utility classes
+// (`bg-background`, `text-foreground`, `bg-primary`, etc) to the CSS
+// variables we emit into :root in variables.css. The two layers stay
+// in sync: variables.css owns the values, the preset owns the utility
+// names that resolve to them.
+const SHADCN_COLOR_ALIASES = {
+    background: 'var(--background)',
+    foreground: 'var(--foreground)',
+    card: { DEFAULT: 'var(--card)', foreground: 'var(--card-foreground)' },
+    popover: { DEFAULT: 'var(--popover)', foreground: 'var(--popover-foreground)' },
+    primary: { DEFAULT: 'var(--primary)', foreground: 'var(--primary-foreground)' },
+    secondary: { DEFAULT: 'var(--secondary)', foreground: 'var(--secondary-foreground)' },
+    muted: { DEFAULT: 'var(--muted)', foreground: 'var(--muted-foreground)' },
+    accent: { DEFAULT: 'var(--accent)', foreground: 'var(--accent-foreground)' },
+    destructive: { DEFAULT: 'var(--destructive)', foreground: 'var(--destructive-foreground)' },
+    border: 'var(--border)',
+    input: 'var(--input)',
+    ring: 'var(--ring)',
+};
+
+// Merge primitive palette (brand-600 etc) with shadcn semantic aliases
+// so widgets can use either `bg-brand-600` or `bg-primary` and both
+// resolve to the same color.
+const mergedColors = Object.assign({}, tokens.color.primitive, SHADCN_COLOR_ALIASES);
+
 const presetBody = `// Generated from tokens.json — do not edit.
 // Usage in a widget's tailwind.config.js:
 //   const preset = require('@anubis/ds/dist/tailwind-preset.cjs');
 //   module.exports = { presets: [preset], content: [...], theme: { extend: { ... } } };
 
+// Include tailwindcss-animate (used by every shadcn component for
+// open/close + slide/fade/zoom transitions).
+let tailwindcssAnimate;
+try { tailwindcssAnimate = require('tailwindcss-animate'); } catch { /* not installed */ }
+
 module.exports = {
+    plugins: tailwindcssAnimate ? [tailwindcssAnimate] : [],
     theme: {
         extend: {
-            colors: ${JSON.stringify(tokens.color.primitive, null, 16).replace(/\n/g, '\n            ')},
+            colors: ${JSON.stringify(mergedColors, null, 16).replace(/\n/g, '\n            ')},
+            borderRadius: {
+                DEFAULT: 'var(--radius)',
+                lg: 'var(--radius)',
+                md: 'calc(var(--radius) - 4px)',
+                sm: 'calc(var(--radius) - 8px)',
+                xl: 'calc(var(--radius) + 4px)',
+                '2xl': 'calc(var(--radius) + 8px)',
+                full: '9999px',
+            },
             spacing: ${JSON.stringify(
         Object.fromEntries(Object.entries(tokens.spacing).map(([k, v]) => [k, `${v}px`])),
-        null, 16,
-    ).replace(/\n/g, '\n            ')},
-            borderRadius: ${JSON.stringify(
-        Object.fromEntries(Object.entries(tokens.radius).map(([k, v]) =>
-            [k, k === 'full' ? '9999px' : `${v}px`],
-        )),
         null, 16,
     ).replace(/\n/g, '\n            ')},
             fontFamily: ${JSON.stringify(tokens.font.family, null, 16).replace(/\n/g, '\n            ')},
@@ -275,7 +321,9 @@ const indexHtml = `<!doctype html>
 </head>
 <body>
     <h1>Anubis <span>Design System</span></h1>
-    <p>Tokens, CSS, and Tailwind preset for every Anubis World widget, launcher, and partner-site embed.</p>
+    <p>Tokens, CSS, Tailwind preset, and React components for every Anubis World widget, launcher, and partner-site embed.</p>
+
+    <p><a class="btn" href="./playground/">Open component playground →</a></p>
 
     <h2>Consume</h2>
     <div class="card">
