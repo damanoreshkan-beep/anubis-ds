@@ -26,7 +26,11 @@ jobs:
             - uses: actions/setup-node@v4
               with:
                   node-version: 22
-            - run: node scripts/build.js
+            - run: npm ci
+            # `npm run build` chains tokens → React library → playground.
+            # The playground lands in dist/playground/ and gets served at
+            # https://damanoreshkan-beep.github.io/anubis-ds/playground/.
+            - run: npm run build
             - uses: actions/configure-pages@v5
               with:
                   enablement: true
