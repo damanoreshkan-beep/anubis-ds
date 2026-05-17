@@ -23,7 +23,10 @@
         "./styles/variables": "./dist/variables.css",
         "./styles/theme": "./dist/theme.css",
         "./styles/animations": "./dist/animations.css",
-        "./tokens": "./dist/tokens.json"
+        "./tokens": "./dist/tokens.json",
+        "./styles/fonts": "./dist/fonts.css",
+        "./dist/*": "./dist/*",
+        "./package.json": "./package.json"
     },
     "files": [
         "tokens.json",
